@@ -1,62 +1,112 @@
 import pygame
+import random
 
-# pygame setup
 pygame.init()
-screen = pygame.display.set_mode((1280, 720))
+
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
+FPS = 60
+
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+RED = (255, 0, 0)
+
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("FPV Drone Game")
+
+drone_img = pygame.image.load('drone.png').convert_alpha()
+tank_imgs = [
+    pygame.image.load('tank1.png').convert_alpha(),
+    pygame.image.load('tank2.png').convert_alpha(),
+    pygame.image.load('tank3.png').convert_alpha(),
+    pygame.image.load('tank4.png').convert_alpha(),
+    pygame.image.load('tank5.png').convert_alpha()
+]
+
+class Player(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.image = drone_img
+        self.rect = self.image.get_rect()
+        self.rect.centerx = SCREEN_WIDTH // 2
+        self.rect.bottom = SCREEN_HEIGHT - 10
+        self.speed_x = 0
+
+    def update(self):
+        self.speed_x = 0
+        keystate = pygame.key.get_pressed()
+        if keystate[pygame.K_LEFT]:
+            self.speed_x = -5
+        if keystate[pygame.K_RIGHT]:
+            self.speed_x = 5
+        self.rect.x += self.speed_x
+        if self.rect.right > SCREEN_WIDTH:
+            self.rect.right = SCREEN_WIDTH
+        if self.rect.left < 0:
+            self.rect.left = 0
+
+class Tank(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.image = random.choice(tank_imgs)
+        self.rect = self.image.get_rect()
+        self.rect.x = random.randrange(SCREEN_WIDTH - self.rect.width)
+        self.rect.y = random.randrange(-100, -40)
+        self.speed_y = random.randrange(1, 4)
+
+    def update(self):
+        self.rect.y += self.speed_y
+        if self.rect.top > SCREEN_HEIGHT + 10:
+            self.rect.x = random.randrange(SCREEN_WIDTH - self.rect.width)
+            self.rect.y = random.randrange(-100, -40)
+            self.speed_y = random.randrange(1, 4)
+
+all_sprites = pygame.sprite.Group()
+tanks = pygame.sprite.Group()
+
+player = Player()
+all_sprites.add(player)
+
+for i in range(8):
+    tank = Tank()
+    all_sprites.add(tank)
+    tanks.add(tank)
+
+score = 0
+level = 1
+
 clock = pygame.time.Clock()
 running = True
-
 while running:
-    # poll for events
-    # pygame.QUIT event means the user clicked X to close your window
-    for event in pygame.event.get():
+
+    clock.tick(FPS)
+
+for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
 
-    # fill the screen with a color to wipe away anything from last frame
-    screen.fill("purple")
+    all_sprites.update()
 
-    # RENDER YOUR GAME HERE
+hits = pygame.sprite.spritecollide(player, tanks, True)
+for hit in hits:
+    tank = Tank()
+    all_sprites.add(tank)
+    tanks.add(tank)
+    score += 1
+    if score % 5 == 0:
+        level += 1
+        for tank in tanks:
+            tank.speed_y += 1
 
-    # flip() the display to put your work on screen
+    screen.fill(BLACK)
+    all_sprites.draw(screen)
+
+    font = pygame.font.Font(None, 36)
+    score_text = font.render(f'Score: {score}', True, WHITE)
+    level_text = font.render(f'Level: {level}', True, WHITE)
+    screen.blit(score_text, (10, 10))
+    screen.blit(level_text, (10, 50))
+
     pygame.display.flip()
 
-    clock.tick(60)  # limits FPS to 60
-
 pygame.quit()
-
-screen_width = 800
-screen_height = 600
-screen = pygame.display.set_mode((screen_wigth, screen_height))
-pygame.display.set_caption("Космическая Эра")
-
-while = (255, 255, 255)
-BLACK = (0, 0, 0)
-BLUE = (0, 0, 255)
-GRENN = (0, 255, 0)
-class Resource:
-    def __init__(self, name):
-        self.name = name
-        self.quantity = 0
-
-class HumanSudtype:
-    def __init__(self, name, efficiency):
-        self.name = name
-        self.efficiency = efficiency
-        self.stage = 1
-    def evolve(self):
-        if self.stage < 4:
-            self.stage += 1
-            self.efficiency *= 1.5
-        else:
-            print("This subtype has reached the maximum evolutionry stage.")
-
-class Planet:
-    def __init__(self, name):
-        self.name = name
-        self.resoursec = {f"Resource {i}": Resource(f"Resource {i}") for i in range(1, 4)}
-        self.human_subtypes = {
-            "miners": HumanSudtype("Miners", 1.0),
-            "builders": HumanSudtype("Builders", 1.0),
-            "soldiers": HumanSudtype("Soldiers")
-        }
